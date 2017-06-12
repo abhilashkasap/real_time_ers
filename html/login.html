@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        Real Time ERS
+    </title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <style>
+        .main_body {
+            background-image: url('/res/bg.jpg');
+            -webkit-background-size: cover;
+            -moz-background-size: cover;
+            background-size: cover;
+            -o-background-size: cover;
+        }
+    </style>
+
+</head>
+
+<body class="container-fluid main_body">
+    <div class="jumbotron">
+        <h3 style="text-align:center">Real Time Emergency Rescue System</h3>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="login()">Touch To Login</button>
+    <div id="login_window">
+    </div>
+
+    <script type="text/javascript">
+        function login() {
+
+            var htmltemp = `<br>
+            <form action="/clogin" method="POST">
+                           <span class="form-control" style="text-align:center"> Username </span><input type="text" placeholder="Username" class="form-control" name="username">
+                           <span class="form-control" style="text-align:center"> Password </span><input type="password" class="form-control" placeholder="password" name="password">
+                           <br><input type="submit" class="form-control btn btn-primary" value="Login">
+    </form>`;
+            document.getElementById('login_window').innerHTML = htmltemp;
+        }
+    </script>
+
+</body>
+
+</html>
