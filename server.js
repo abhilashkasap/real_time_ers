@@ -10,7 +10,7 @@ var io = require('socket.io')(http);
 
 var config = {
     user: 'postgres',
-    database: 'postgres',
+    database: 'real_time_ERS',
     host: 'localhost',
     port: '5432',
     password: 'abhilash'
@@ -62,10 +62,37 @@ app.post('/clogin',function(req,res){
    var username=req.body.username;
     var password= req.body.password;
     console.log(username);
-    console.log(password);
-    res.end();
+   // console.log(password);
+    pool.query('select * from user_info where username = $1',[username],function(err,result){
+       if(err)
+           {
+               res.status(500).send(err.toString());
+           }
+        else
+            {
+                if(result.rows.length===1)
+                    {
+                if(result.rows[0].password===password)
+                    {
+                        req.session.auth= { username: result.rows[0].username};
+                        console.log('logged in');
+                        //res.send('credentials correct');
+                        res.redirect('/html/index.html');
+                    }
+                else
+                    {
+                        
+                        res.status(403).send('  Password not correct !!');
+                    }
+            }
+                else{
+                    res.send('Username Incorrect !!!');
+                }
+            }
+    });
+    
 });
-app.post('/ulogin', function(req, res) {
+/*app.post('/ulogin', function(req, res) {
     var username = req.body.username;
     var password = req.body.password;
     console.log(username);
@@ -86,10 +113,10 @@ app.post('/ulogin', function(req, res) {
             }
         }
     });
-});
+});*/
 app.get('/check-login', function(req, res) {
-    if (req.session && req.session.auth && req.session.auth.userName) {
-        pool.query('select * from userdetail where username = $1', [req.session.auth.userName], function(err, result) {
+    if (req.session && req.session.auth && req.session.auth.username) {
+        pool.query('select * from user_info where username = $1', [req.session.auth.username], function(err, result) {
             if (err) {
                 res.status(500).send(err.toString());
 

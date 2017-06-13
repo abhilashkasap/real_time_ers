@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        Welcome ! Real Time ERS
+    </title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+</head>
+
+<body class="container-fluid">
+    <nav class="navbar navbar-inverse">
+
+        <div class="container-fluid">
+
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+          <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span> 
+      </button>
+                <a class="navbar-brand" href="/">ERS</a>     </div>
+
+            <div class="collapse navbar-collapse" id="myNavbar">
+
+                <ul class="nav navbar-nav">
+
+                    <li><a href="#" onclick="saviour()">Saviour Mode</a></li>
+
+                    <li><a href="#" onclick="traveller()">Traveller Mode</a></li>
+
+                    <li><a href="#">Fetch History</a></li>
+
+                    <li><a href="#">Request Editing</a></li>
+                </ul>
+
+                <ul class="nav navbar-nav navbar-right">
+
+                    <li><a href="#"><span id="login" class="glyphicon glyphicon-user"></span></a></li>
+
+                    <li><a href="/logout"><span class="glyphicon glyphicon-log-out"></span>&nbsp  Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div id="content"> </div>
+
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+
+    <script type="text/javascript">
+        var socket = io();
+
+        function loggedin_change(username) {
+
+            var htmltemp = `&nbsp Hi,${username}`;
+            document.getElementById('login').innerHTML = htmltemp;
+        }
+        // to be implemented
+        /*   socket.on('chat message', function(msg) {
+               //document.getElementById('mg').innerHTML=msg;
+               playSound();
+           });
+           var submit = document.getElementById('danger');
+           submit.onclick = function() {
+               socket.emit('chat message', ' Plzz save ${req.params.username} is in danger');
+           }
+
+           function playSound() {
+               // document.getElementById("sound").innerHTML = '<audio autoplay="autoplay"><source src="' + 'audio' + '.mp3" type="audio/mpeg" /><embed hidden="true" autostart="true" loop="false" src="' + 'audio' + '.mp3" /></audio>';
+
+               var audio = new Audio('/audio.mp3');
+               audio.play();
+
+           }*/
+        function saviour() {
+            document.getElementById('content').innerHTML = ' <pre> Waiting for Input, Saviour mode</pre> ';
+
+        }
+
+        function traveller() {
+
+            document.getElementById('content').innerHTML = ' <pre> Traveller  Mode </pre> ';
+
+        }
+        saviour();
+
+        function checklogin() {
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function() {
+                if (request.readyState === XMLHttpRequest.DONE) {
+                    if (request.status === 200) {
+                        loggedin_change(this.responseText);
+                    } else {
+                        window.location.href = '/';
+                    }
+                }
+            };
+
+            request.open('GET', '/check-login', true);
+            request.send(null);
+
+        }
+
+
+        checklogin();
+    </script>
+</body>
+
+</html>
