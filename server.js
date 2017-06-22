@@ -129,6 +129,27 @@ app.get('/check-login', function(req, res) {
         res.status(400).send('You are not logged in');
     }
 });
+app.post('/create_trip',function(req,res){
+   console.log('here');
+    var username = req.session.auth.username;
+    var vehicle_no = req.body.vehicle_no;
+    var trip_date = req.body.trip_date;
+    var trip_time = req.body.trip_time;
+    var src_lat=   req.body.src_lat;
+    var src_long = req.body.src_long;
+    pool.query('insert into trip_detail (trip_user,trip_date,trip_time,src_lat,src_long,trip_vehicle_no) values ($1,$2,$3,$4,$5,$6)',[username,trip_date,trip_time,src_lat,src_long,vehicle_no],function(err,result){
+       if(err)
+           {
+               
+               res.status(500).send(err.toString());
+           }
+        else
+            {
+                
+                res.send('done!');
+            }
+    });
+});
 app.get('/logout', function(req, res) {
     delete req.session.auth;
     res.send('<http><head><meta http-equiv="Refresh" content="1; /"><h1>Logged Out</h1></head>');
@@ -141,44 +162,6 @@ io.on('connection', function(socket) {
 });
 
 
-app.get('/lgtemp/:username', function(req, res) {
-    var template = `<html>
-                     <head>
-                     <title>
-                        New Temp</title>
-                        </head>
-                        <body >
-                        <h1>` + req.params.username + `</h1>
-                         is logged in with socket
-                         <br>
-                          <input type="submit" value="I'm in Danger !!!" id="danger"><br>
-                          <span id="mg">  </span>
-                          <div id="sound"></div>
-                         <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
-    <script>
-        var socket = io();
-        
-        socket.on('chat message', function(msg){
-        //document.getElementById('mg').innerHTML=msg;
-        playSound();
-      });
-      var submit =document.getElementById('danger');
-      submit.onclick=function(){
-          socket.emit('chat message', ' Plzz save ${req.params.username} is in danger');
-      }
-      function playSound() {
-       // document.getElementById("sound").innerHTML = '<audio autoplay="autoplay"><source src="' + 'audio' + '.mp3" type="audio/mpeg" /><embed hidden="true" autostart="true" loop="false" src="' + 'audio' + '.mp3" /></audio>';
-    
-var audio = new Audio('/audio.mp3');
-audio.play();
-
-}
-
-    </script>
-                         </body>
-                         </html>`;
-    res.send(template);
-})
 
 var port = process.env.PORT || 8082;
 http.listen(port, function() {

@@ -1,0 +1,3 @@
+1. add vehicles database and add a foreign key to trip_detail.
+2. accuracy value is set 5000 .. change it before actual testing.
+3. updating location.

@@ -10,6 +10,20 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <style>
+        .btn-circle.btn-xl {
+            width: 200px;
+            height: 200px;
+            padding: 10px 16px;
+            font-size: 24px;
+            line-height: 1.33;
+            border-radius: 100px;
+        }
+        
+        #map {
+            height: 100%;
+        }
+    </style>
 
 </head>
 
@@ -54,12 +68,70 @@
 
     <script type="text/javascript">
         var socket = io();
+        var stop_change = false;
+        var latitude;
+        var longitude;
+        var accuracy;
+        var vehicle;
+        var rcv_lat = '';
+        var rcv_long = '';
+        var rcv_vehicle = '';
+        var rcv_user = '';
 
         function loggedin_change(username) {
 
-            var htmltemp = `&nbsp Hi,${username}`;
+            var htmltemp = `${username}`;
             document.getElementById('login').innerHTML = htmltemp;
         }
+
+        function background_geolocation() {
+
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(onSuccess, onError, {
+                    enableHighAccuracy: true
+                });
+            } else {
+                x.innerHTML = "Geolocation is not supported by this browser. ";
+            }
+        }
+
+        function onSuccess(position) {
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
+            accuracy = position.coords.accuracy;
+            console.log(accuracy);
+
+            /* alert("hi your location acc : " + points[0].acc);
+             var mapOptions = {
+                 center: new google.maps.LatLng(points[0].lat, points[0].long),
+                 zoom: 17,
+                 mapTypeId: google.maps.MapTypeId.SATELLITE
+             };
+             var map = new google.maps.Map(document.getElementById('mapholder'), mapOptions);
+             var marker = new google.maps.Marker({
+                 position: new google.maps.LatLng(points[0].lat, points[0].long),
+                 map: map
+             });*/
+        }
+
+        function onError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    x.innerHTML = "User denied the request for Geolocation."
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    x.innerHTML = "Location information is unavailable."
+                    break;
+                case
+                error.TIMEOUT:
+                    x.innerHTML = "The request to get user location timed out."
+                    break;
+                case error.UNKNOWN_ERROR:
+                    x.innerHTML = "An unknown error occurred."
+                    break;
+            }
+        }
+        background_geolocation();
         // to be implemented
         /*   socket.on('chat message', function(msg) {
                //document.getElementById('mg').innerHTML=msg;
@@ -77,17 +149,353 @@
                audio.play();
 
            }*/
-        function saviour() {
-            document.getElementById('content').innerHTML = ' <pre> Waiting for Input, Saviour mode</pre> ';
+        function playSound() {
 
+            var audio = new Audio('/res/enough.mp3');
+            audio.play();
+
+        }
+
+        function saviour() {
+            if (stop_change === false) {
+
+                document.getElementById('content').innerHTML = ' <br><br><p style="text-align:center"> Hello Saviour , Waiting for emergency request ....</p> ';
+            } else {
+                alert('You have not completed the trip yet cannot change mode !!!');
+            }
+        }
+
+        function testsocket() {
+            socket.emit('chat message', 'going or not');
         }
 
         function traveller() {
+            if (stop_change === false) {
+                var htmltemp = ` <br><div style="text-align:center">
+                             <input type="submit" class="btn btn-primary" value=" + Add Trip " onclick="trip_form()"></div>
+                             <input type="submit" class="btn btn-primary" value="test socket" onclick="testsocket()">
+                 `;
+                document.getElementById('content').innerHTML = htmltemp;
+            } else {
+                alert('You have not completed the trip yet cannot change mode !!!');
 
-            document.getElementById('content').innerHTML = ' <pre> Traveller  Mode </pre> ';
+            }
 
         }
         saviour();
+
+        function trip_form() {
+            var date = new Date();
+            var time = date.toLocaleTimeString();
+            console.log(date);
+            console.log(time);
+            var htmltemp = ` <br>
+            <div style="text-align:left">
+                             <span class="btn btn-primary">Enter Trip Details</span><hr>
+                             <label>Vehicle No:</label>
+                             <input type="text" id="vehicle_no" class="form-control" placeholder="Enter Vehicle no without space">
+                             <label>Trip Date:</label>
+                             <input type="text" id="trip_date" class="form-control" value="${date.toDateString()}">
+                            <label>Trip Time:</label>
+                             <input type="text" id="trip_time" class="form-control" value="${time}"><br>
+                             <input type="submit"  class="btn btn-primary" value="Start Trip" onclick="start_trip()">
+                            
+                             
+                             </div>
+            `;
+            document.getElementById('content').innerHTML = htmltemp;
+
+        }
+
+        function start_trip() {
+
+            if (accuracy > 9999999) { //dummy value of accuracy change it later
+                alert(`Sorry Weak GPS signal ...Low accuracy ACC: ${accuracy}`);
+            } else {
+                if (accuracy > 50) {
+                    alert(`Sorry Weak GPS signal ...Low accuracy ACC: ${accuracy}`);
+                }
+                // createbutton();
+                var vehicle_no = document.getElementById('vehicle_no').value;
+                var trip_date = document.getElementById('trip_date').value;
+                var trip_time = document.getElementById('trip_time').value;
+
+                var request = new XMLHttpRequest();
+                request.onreadystatechange = function() {
+                    if (request.readyState === XMLHttpRequest.DONE) {
+                        if (request.status === 200) {
+                            //alert('exec');
+                            vehicle = vehicle_no;
+                            createbutton();
+                        } else {
+                            alert('Something went Wrong !!');
+                        }
+                    }
+                }
+                request.open('POST', '/create_trip', true);
+                request.setRequestHeader('Content-Type', 'application/json');
+                request.send(JSON.stringify({
+                    vehicle_no: vehicle_no,
+                    trip_date: trip_date,
+                    trip_time: trip_time,
+                    src_lat: latitude,
+                    src_long: longitude
+                }));
+
+            }
+        }
+
+        function createbutton() {
+
+            stop_change = true;
+            var htmltemp = `<div style="text-align:center">
+            <br><br>
+                                <button type="button" style="background-color:yellow;color:blue" class="btn btn-primary btn-circle btn-xl" onclick="change_button()"><p> Danger</p></button>
+                                <br> <br><br>
+                                <button type="button" class="btn btn-primary" onclick="trip_complete()">Trip Complete</button>
+                             `;
+            document.getElementById('content').innerHTML = htmltemp;
+        }
+
+        function change_button() {
+
+            var htmltemp = `<div style="text-align:center">
+            <br><br>
+                                <button type="button" style="background-color:red" class="btn btn-primary btn-circle btn-xl" onclick="send_alert()">Request</button>
+                                <br><br><br>
+                                <button type="button" class="btn btn-primary" onclick="trip_complete()">Trip Complete</button>
+                             `;
+            document.getElementById('content').innerHTML = htmltemp;
+
+
+        }
+
+        function send_alert() {
+            var username = document.getElementById('login').innerHTML;
+            //alert('alert sent ');
+            //  socket.emit('chat message', ' Plzz save ${req.params.username} is in danger');
+            var header = `alert_msg,${vehicle},${username}@`;
+            var message = header + `${latitude},${longitude},`;
+            socket.emit('chat message', `${message}`);
+            var htmltemp = ` <p> Alert Sent ... Accept counter: ??</p>
+<br><br>
+<button type="button" class="btn btn-primary" onclick="trip_complete()">Trip Complete</button>`;
+            document.getElementById('content').innerHTML = htmltemp;
+
+
+        }
+
+        function trip_complete() {
+
+            stop_change = false;
+            alert('Trip Complete');
+            // more codes in the way
+            traveller();
+        }
+
+        function distance(lat1, lon1, lat2, lon2, unit) {
+            var radlat1 = Math.PI * lat1 / 180;
+            var radlat2 = Math.PI * lat2 / 180;
+            var theta = lon1 - lon2;
+            var radtheta = Math.PI * theta / 180;
+            var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+            dist = Math.acos(dist);
+            dist = dist * 180 / Math.PI;
+            dist = dist * 60 * 1.1515;
+            if (unit == "K") {
+                dist = dist * 1.609344;
+            }
+            if (unit == "N") {
+                dist = dist * 0.8684;
+            }
+            return dist;
+        }
+
+        function initMap() {
+            var directionsService = new google.maps.DirectionsService;
+            var directionsDisplay = new google.maps.DirectionsRenderer;
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 7,
+                center: {
+                    lat: latitude,
+                    lng: longitude
+                }
+            });
+            var service = new google.maps.DistanceMatrixService();
+            service.getDistanceMatrix({
+                origins: [new google.maps.LatLng(latitude, longitude)],
+                destinations: [new google.maps.LatLng(rcv_lat, rcv_long)],
+                travelMode: 'DRIVING',
+                // transitOptions: TransitOptions,
+                // drivingOptions: DrivingOptions,
+                // unitSystem: UnitSystem,
+                // avoidHighways: Boolean,
+                // avoidTolls: Boolean,
+            }, callback);
+            directionsDisplay.setMap(map);
+            directionsDisplay.setPanel(document.getElementById('directionsPanel'));
+
+
+            calculateAndDisplayRoute(directionsService, directionsDisplay);
+
+        }
+
+        function callback(response, status) {
+            // See Parsing the Results for
+            // the basics of a callback function.
+            if (status == 'OK') {
+                var origins = response.originAddresses;
+                var destinations = response.destinationAddresses;
+
+                for (var i = 0; i < origins.length; i++) {
+                    var results = response.rows[i].elements;
+                    for (var j = 0; j < results.length; j++) {
+                        var element = results[j];
+                        var distance = element.distance.text;
+                        var duration = element.duration.text;
+                        var from = origins[i];
+                        var to = destinations[j];
+                        var htmltemp = `<p> From : ${from}<br> To : ${to} </p><br>
+                                      <p> Distance :  ${distance} <br> Duration : ${duration}</p>`;
+                        document.getElementById('distance').innerHTML = htmltemp;
+                    }
+                }
+            }
+        }
+
+        function calculateAndDisplayRoute(directionsService, directionsDisplay) {
+            directionsService.route({
+                origin: new google.maps.LatLng(latitude, longitude),
+                destination: new google.maps.LatLng(rcv_lat, rcv_long),
+                travelMode: 'DRIVING',
+                //transitOptions: TransitOptions,
+                //drivingOptions: DrivingOptions,
+                //unitSystem: UnitSystem,
+                //waypoints[]: DirectionsWaypoint,
+                //optimizeWaypoints: Boolean,
+                //provideRouteAlternatives: Boolean,
+                //avoidHighways: Boolean,
+                //avoidTolls: Boolean,
+                //region: String
+                /*
+                {
+  origin: 'Chicago, IL',
+  destination: 'Los Angeles, CA',
+  waypoints: [
+    {
+      location: 'Joplin, MO',
+      stopover: false
+    },{
+      location: 'Oklahoma City, OK',
+      stopover: true
+    }],
+  provideRouteAlternatives: false,
+  travelMode: 'DRIVING',
+  drivingOptions: {
+    departureTime: new Date(/* now, or future date ),
+    trafficModel: 'pessimistic'
+  },
+  unitSystem: google.maps.UnitSystem.IMPERIAL
+}
+driving options need premium subscription of maps api
+sample 2
+{
+  origin: 'Hoboken NJ',
+  destination: 'Carroll Gardens, Brooklyn',
+  travelMode: 'TRANSIT',
+  transitOptions: {
+    departureTime: new Date(1337675679473),
+    modes: ['BUS'],
+    routingPreference: 'FEWER_TRANSFERS'
+  },
+  unitSystem: google.maps.UnitSystem.IMPERIAL
+}
+                */
+            }, function(response, status) {
+                if (status === 'OK') {
+                    directionsDisplay.setDirections(response);
+                } else {
+                    window.alert('Directions request failed due to ' + status);
+                }
+            });
+        }
+
+        function show_req() {
+
+            var htmltemp = ` <div id="distance">
+            </div> <br><br>
+                             <div id="map" style="width:100%; height:600px">
+                             </div>
+                             <br>
+                             <div id="directionsPanel"  style="width:100%;height 100%">
+                             </div>
+                             
+                            `;
+            stop_change = true;
+            document.getElementById('content').innerHTML = htmltemp;
+
+            initMap();
+
+        }
+
+        socket.on('chat message', function(msg) {
+            //document.getElementById('mg').innerHTML=msg;
+            //playSound();
+            // alert(msg);
+            navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+
+            /* if (navigator.vibrate) {
+                 // vibration API supported
+                 navigator.vibrate(500);
+             }*/
+            var temp = '';
+            for (var i = 0; msg[i] != ','; i++)
+                temp = temp + msg[i];
+            // alert(temp);
+            if (temp === 'alert_msg') {
+                // alert(temp);
+                playSound();
+                if (navigator.vibrate) {
+                    // vibration API supported
+                    navigator.vibrate(1000);
+                }
+
+                rcv_vehicle = '';
+                rcv_user = '';
+                rcv_lat = '';
+                rcv_long = '';
+                i++;
+                for (; msg[i] != ','; i++)
+                    rcv_vehicle = rcv_vehicle
+                i++;
+                for (; msg[i] != '@'; i++)
+                    rcv_user = rcv_user + msg[i];
+                i++;
+                for (; msg[i] != ','; i++)
+                    rcv_lat = rcv_lat + msg[i];
+                i++;
+                for (; msg[i] != ','; i++)
+                    rcv_long = rcv_long + msg[i];
+                var htmltemp = ` Alert Received ...<br>${rcv_vehicle}<br>${rcv_user}<br>${rcv_lat}<br>${rcv_long}`;
+                /* if (stop_change === false) {
+                     document.getElementById('content').innerHTML = htmltemp;
+                 }*/
+                var dist = distance(latitude, longitude, rcv_lat, rcv_long, 'K');
+                var alert_temp = `<pre>A Danger request from >= ${dist}  KM</pre> <br>
+                                       <input type="submit" class="btn btn-danger" value="Accept "  onclick="show_req()">
+                                       &nbsp &nbsp <input type="sunmit" class="btn btn-primary" value="Discard" onclick="saviour()">`;
+                if (stop_change === false) {
+                    document.getElementById('content').innerHTML = alert_temp;
+                }
+
+                // document.getElementById('content').innerHTML = msg;
+
+            }
+
+
+        });
+
+
 
         function checklogin() {
             var request = new XMLHttpRequest();
@@ -108,6 +516,8 @@
 
 
         checklogin();
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAXoReu2JMdi6POrcgzee6rJ9CeVX_CwXo">
     </script>
 </body>
 
